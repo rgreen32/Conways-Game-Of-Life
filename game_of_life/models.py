@@ -4,5 +4,8 @@ from dataclasses import dataclass
 class Cell:
     position_x: int
     position_y: int
+    rect_x: int
+    rect_y: int
     canvas_id: int
-    is_alive: bool = False
+    was_alive: bool = False
+    is_alive: bool = None
