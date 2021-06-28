@@ -3,6 +3,7 @@ from game_of_life.grid import Grid
 import time
 
 
+
 class Simulation():
 
     def __init__(self, window_height: int = 600, window_width: int = 600):
@@ -13,6 +14,9 @@ class Simulation():
 
         self.canvas: Canvas = self._create_canvas()
         self.grid = Grid(self.window, self.canvas)
+
+        print("made it here..")
+        
         
     def start(self):
         self.grid.start_sim_loop()

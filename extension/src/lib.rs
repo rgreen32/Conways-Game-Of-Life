@@ -1,10 +1,11 @@
 use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
+use pyo3::types::PyList;
+use pyo3::types::PyTuple;
 
 #[pyclass(unsendable)]
 struct Cell{
-    position_x: usize,
-    position_y: usize,
+    position_x: i32,
+    position_y: i32,
     rect_x: i32,
     rect_y: i32,
     #[pyo3(get, set)]
@@ -16,7 +17,7 @@ struct Cell{
 #[pymethods]
 impl Cell {
     #[new]
-    fn new(position_x: usize, position_y: usize, rect_x: i32, rect_y: i32) -> Self {
+    fn new(position_x: i32, position_y: i32, rect_x: i32, rect_y: i32) -> Self {
         Cell { position_x, position_y, rect_x, rect_y, canvas_id: 0, was_alive: false, is_alive: false }
     }
 
@@ -32,41 +33,88 @@ impl Cell {
     }
 }
 
+fn get_live_neighbors(cells: &Vec<Vec<Cell>>, cell: &Cell) -> usize{
+    let mut live_neighbors = 0;
+
+    let cell_map_x_length = (cells.len()-1) as i32;
+    let cell_map_y_length = (cells[0].len()-1) as i32;
+    for position_x in (cell.position_x-1..cell.position_x+2){
+
+        if (position_x < 0 || position_x > cell_map_x_length){continue}
+
+        for position_y in (cell.position_y-1..cell.position_y+2){
+            if (position_y < 0 || position_y > cell_map_y_length){continue}
+            else if (position_x == cell.position_x && position_y == cell.position_y){continue}
+
+            let neighboring_cell = &cells[position_x as usize][position_y as usize];
+            if (neighboring_cell.was_alive){
+                live_neighbors += 1
+            }
+        }
+    }
+
+    return live_neighbors
+}
+
+fn cell_is_alive(cells: &Vec<Vec<Cell>>, cell: &Cell) -> bool{
+    let live_neighbors = get_live_neighbors(&cells, &cell);
+
+    if (cell.was_alive && (live_neighbors == 2 || live_neighbors == 3)){
+        return true
+    }else if (!cell.was_alive && live_neighbors ==3) {
+        return true
+    }else{
+        return false
+    }
+    
+}
+
+
 #[pyclass(unsendable)]
 struct Grid{
-    pub cells: Vec<Vec<Cell>>,
-    window_height: i32,
-    window_width: i32,
-    pixel_ratio: usize
+    pub cells: Vec<Vec<Cell>>
 }
 #[pymethods]
 impl Grid {
     #[new]
-    fn new(window_height: i32, window_width: i32, number_of_cells_y_axis: i32) -> Self {
-        let pixel_ratio = (window_height/number_of_cells_y_axis) as usize;
-        let mut cell_rows: Vec<Vec<Cell>> = Vec::new();
-        for (row_index, rect_x) in (0..window_width).step_by(pixel_ratio).enumerate(){
-            let mut cell_column: Vec<Cell> = Vec::new();
-            for (column_index, rect_y) in (0..window_height).step_by(pixel_ratio).enumerate(){
-                let cell = Cell{position_x: row_index, position_y: column_index, rect_x, rect_y, canvas_id: 0, was_alive: false, is_alive: false};
-                cell_column.push(cell);
+    fn new(cells: &PyList) -> Self {
+        // let pixel_ratio = (window_height/number_of_cells_y_axis) as i32;
+        // let gil = Python::acquire_gil();
+        // let py = gil.python();
+        let cell_rows: Vec<&PyList> = cells.extract().unwrap();
+        let mut rust_cell_rows: Vec<Vec<Cell>> = Vec::new();
+        for cell_column in cell_rows{
+            let mut rust_cell_column: Vec<Cell> = Vec::new();
+            let new_cell_column: Vec<&PyTuple> = cell_column.extract().unwrap();
+            for cell in new_cell_column{
+                let cell_values: (i32, i32, i32, i32, i32, bool, bool) = cell.extract().unwrap();
+                let rust_cell = Cell{position_x: cell_values.0, position_y: cell_values.1, rect_x: cell_values.2, rect_y: cell_values.3, canvas_id: cell_values.4, was_alive: cell_values.5, is_alive: cell_values.6};
+                rust_cell_column.push(rust_cell)
             }
-            cell_rows.push(cell_column);
+            rust_cell_rows.push(rust_cell_column)
         }
-        // let number_of_cells_y_axis = ((self.canvas_height)/(self.canvas_pixels_to_meters_ratio as f32*self.cell_side_length_meters as f32)) as usize;
-        Grid { window_height, window_width, pixel_ratio, cells: cell_rows}
+
+        Grid {cells: rust_cell_rows}
     }
 
-    #[getter(cells)]
-    fn cells(&self) -> PyResult<Vec<Vec<Cell>>> {
-        Ok(self.canvas_id)
+    fn sim_step(&mut self){
+        for cell_column in &mut self.cells{
+            for cell in cell_column{
+                // let cell_is_alive = cell_is_alive(&self.cells, cell);
+                // cell.is_alive = cell_is_alive;
+            }
+        }
     }
 
-    #[setter(canvas_id)]
-    fn set_canvas_id(&mut self, value: i32) -> PyResult<()> {
-        self.canvas_id = value;
-        Ok(())
-    }
+
+
+
+
+    // #[setter(cells)]
+    // fn set_canvas_id(&mut self, position_x: usize, position_y: usize, is_alive: bool) -> PyResult<()> {
+    //     self.canvas_id = value;
+    //     Ok(())
+    // }
 }
 
 

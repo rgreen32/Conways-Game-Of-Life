@@ -1,7 +1,8 @@
 from game_of_life.models import Cell
 from game_of_life.rules_engine import RulesEngine
-from typing import List
+from typing import List, Tuple
 from tkinter import Canvas, Tk
+from extension.target.release import grid
 
 class Grid:
     NUMBER_OF_CELLS_Y_AXIS = 30
@@ -14,15 +15,17 @@ class Grid:
         self.pixel_ratio: int = self.window_height/self.NUMBER_OF_CELLS_Y_AXIS
         self.cell_side_length = self.CELL_SIDE_LENGTH * self.pixel_ratio
         number_of_cells = self.window_width 
-        self.cells: List[List[Cell]] = self._create_cells()
-        self.rules_engine = RulesEngine(self.cells)
+        self.cells: List[List[Tuple]] = self._create_cells()
 
-        self.cells[4][3].is_alive = True
-        self.cells[4][4].is_alive = True
-        self.cells[4][5].is_alive = True ## Glider
-        self.cells[3][5].is_alive = True
-        self.cells[2][4].is_alive = True
-        self._render_cells()
+        rust_grid = grid.Grid(self.grid.cells)
+        # self.rules_engine = RulesEngine(self.cells)
+
+        # self.cells[4][3].is_alive = True
+        # self.cells[4][4].is_alive = True
+        # self.cells[4][5].is_alive = True ## Glider
+        # self.cells[3][5].is_alive = True
+        # self.cells[2][4].is_alive = True
+        # self._render_cells()
 
 
     def start_sim_loop(self): 
@@ -45,7 +48,7 @@ class Grid:
             cell_columns = []
             for column_index, rect_y in enumerate(range(0, self.window_height, int(self.cell_side_length))):               
                 cell_canvas_id = self.canvas.create_rectangle(rect_x, rect_y, (rect_x + self.cell_side_length), (rect_y + self.cell_side_length), outline='green')
-                cell = Cell(row_index, column_index, rect_x, rect_y, cell_canvas_id)
+                cell = (row_index, column_index, rect_x, rect_y, cell_canvas_id, False, False)
                 cell_columns.append(cell)
             cell_rows.append(cell_columns)
         return cell_rows
