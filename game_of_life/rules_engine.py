@@ -6,7 +6,7 @@ class RulesEngine():
     def __init__(self, cell_map: List[List[Cell]]):
         self.cell_map = cell_map
 
-    def cell_is_alive(self, cell: Cell):
+    def cell_is_alive(self, cell: Cell) -> bool:
         live_neighbors = self._get_live_neighbors(cell)
 
         if cell.was_alive and (live_neighbors == 2 or live_neighbors == 3):
